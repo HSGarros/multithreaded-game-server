@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>game</title>
+    <style>
+        #board {
+            width: 450px;
+            height: 450px;
+            border: 1px solid #000;
+            display: flex;
+            flex-wrap: wrap;
+            background: #F7E6B7;
+            left: -10px;
+            top: -10px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .cell.clicked {
+            background-color: #000;
+            border-radius: 100%;
+        }
+
+        .cell.otherclicked {
+            background-color: #FFF;
+            border-radius: 100%;
+        }
+
+    </style>
+</head>
+<body>
+    <div>get username from: 127.0.0.1:8080/register </div>
+    <div id="board"></div>
+
+    </br>
+    <textarea class="custom-textarea" type="text" id="response" rows="5" cols="50"></textarea></br>
+
+    <input type="text" id="username" placeholder="input name">
+    <button onclick="generateLink()">Link</button>
+
+    <div id="linkContainer"></div>
+
+
+
+
+
+    <script>
+        var myList = [];
+        var gameId = null;
+        var move = null;
+        var username = null;
+        var board = document.getElementById("board");
+        var now = null;
+
+        for (var i = 0; i < 15; i++) {
+            for (var j = 0; j < 15; j++) {
+                var cell = document.createElement("div");
+                cell.setAttribute("id", i * 15 + j);
+                cell.classList.add("cell");
+                cell.addEventListener("click", handleClick);
+                board.appendChild(cell);
+            }
+        }
+
+        // 处理点击事件
+        function handleClick(event) {
+            var cell = event.target;
+            console.log(cell);
+            if (!myList.includes(cell.id)) {
+                if (now != null) {
+                    now.classList.remove('clicked');
+                }
+                var row = Math.floor(Array.from(cell.parentNode.children).indexOf(cell) / 15);
+                var col = Array.from(cell.parentNode.children).indexOf(cell) % 15;
+                console.log("Clicked at row:", row, "column:", col);
+                if (now == cell) {
+                    now = null;
+                    move = null;
+                } else {
+                    move = cell.id;
+                    cell.classList.add('clicked');
+                    now = cell;
+                }
+            } else {
+                console.log("error chosen");
+                console.log(now);
+                console.log(move);
+                alert("error chosen");
+
+            }
+      
+
+        }
+
+
+        function generateLink() {
+            username = document.getElementById("username").value;
+            
+
+            var link = document.createElement("button");
+            link.setAttribute("onclick", "linkprime(event)");
+            link.setAttribute("value", "http://127.0.0.1:8080/pairme?player=" + username + "");
+            link.setAttribute("id", "prime")
+            link.innerText = "prime";
+            var container = document.getElementById("linkContainer");
+            container.appendChild(link);
+
+            container.innerHTML = '';
+            container.appendChild(link);
+            var separator = document.createElement("span");
+            separator.innerText = "   ";
+            container.appendChild(separator);
+
+
+            var link = document.createElement("button");
+            link.setAttribute("onclick", "linkmymove(event)");
+            //link.setAttribute("value", "http://127.0.0.1:8080/mymove?player=" + username + "&id=" + gameId + "&move=" + move + "");
+            link.setAttribute("id","mymove")
+            link.innerText = "mymove";
+            var container = document.getElementById("linkContainer");
+            container.appendChild(link);
+
+            var separator = document.createElement("span");
+            separator.innerText = "   ";
+            container.appendChild(separator);
+
+            var link = document.createElement("button");
+            link.setAttribute("onclick", "linktheirmove(event)");
+            //link.setAttribute("value", "http://127.0.0.1:8080/theirmove?player=" + username + "&id=" + gameId + "");
+            link.setAttribute("id", "theirmove")
+            link.innerText = "theirmove";
+            var container = document.getElementById("linkContainer");
+            container.appendChild(link);
+
+            var separator = document.createElement("span");
+            separator.innerText = "   ";
+            container.appendChild(separator);
+
+            var link = document.createElement("button");
+            link.setAttribute("onclick", "linkquit(event)");
+            //link.setAttribute("value", "http://127.0.0.1:8080/quit?player=" + username + "&id=" + gameId + "");
+            link.setAttribute("id", "quit")
+            link.innerText = "quit";
+            var container = document.getElementById("linkContainer");
+            container.appendChild(link);
+        }
+
+        function linkprime(event) {
+            var targetElement = event.target;
+            
+            fetch(targetElement.value, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-cache",
+            credentials: "same-origin",
+            headers: {
+                "Accept": "text/plain",
+            }})
+            .then(res => res.text())
+            .then(data => {
+                console.log(data);
+                if (data.length > 20) {
+
+                    document.getElementById("response").value = data.substring(16);
+                    gameId = data.substring(0, 16);
+                    console.log(gameId);
+                    var tm = document.getElementById("theirmove");
+                    tm.setAttribute("value", "http://127.0.0.1:8080/theirmove?player=" + username + "&id=" + gameId + "");
+                    var q = document.getElementById("quit");
+                    q.setAttribute("value", "http://127.0.0.1:8080/quit?player=" + username + "&id=" + gameId + "");
+
+
+                } else {
+                    document.getElementById("response").value = data;
+                }
+
+            })
+            .catch(console.error);
+
+        }
+
+        function linkmymove(event) {
+            if (move != null && now != null) {
+                var targetElement = event.target;
+                console.log(targetElement);
+                targetElement.setAttribute("value", "http://127.0.0.1:8080/mymove?player=" + username + "&id=" + gameId + "&move=" + move + "");
+                var link = targetElement.value;
+                console.log(link);
+                fetch(targetElement.value, {
+                    method: "GET",
+                    mode: "cors",
+                    cache: "no-cache",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "text/plain",
+                    }
+                })
+                    .then(res => res.text())
+                    .then(data => {
+                        console.log(data);
+                        if (data == "accept") {
+                            now = null;
+                            console.log("accept");
+                            myList.push(move);
+
+
+
+                        } else {
+                            console.log("refuse");
+                            var cell = document.getElementById(move);
+                            console.log(move);
+                            console.log(cell);
+                            cell.classList.remove('clicked');
+                        }
+
+                    })
+                    .catch(console.error);
+            } else {
+                alert("Please choose your step");
+            }
+            
+        }
+
+        function linktheirmove(event) {
+            var targetElement = event.target;
+            console.log(targetElement);
+            var link = targetElement.value;
+            console.log(link);
+
+            fetch(targetElement.value, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-cache",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "text/plain",
+                }
+            })
+                .then(res => res.text())
+                .then(data => {
+                    console.log(data);
+                    if (data != "-1") {
+                        if (now != null) {
+                            now.classList.remove('clicked');
+                            now = null;
+                        }
+                        var posi = data;
+                        console.log(posi);
+                        var cell = document.getElementById(posi);
+                        console.log(cell);
+                        cell.classList.add('otherclicked');
+                        myList.push(cell.id);
+                    } else {
+
+                    }
+
+                })
+                .catch(console.error);
+        }
+
+        function linkquit(event) {
+            var targetElement = event.target;
+            console.log(targetElement);
+            var link = targetElement.value;
+            console.log(link);
+
+            fetch(targetElement.value, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-cache",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "text/plain",
+                }
+            })
+                .then(res => res.text())
+                .then(data => {
+                    console.log(data);
+                    document.getElementById("response").value = data;
+
+                })
+                .catch(console.error);
+
+        }
+
+    </script>
+</html>
